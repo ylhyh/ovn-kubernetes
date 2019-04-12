@@ -208,6 +208,8 @@ spec:
           name: host-var-lib-ovs
         - mountPath: /var/log/openvswitch/
           name: host-var-log-ovs
+        - mountPath: /var/log/ovn-kubernetes/
+          name: host-var-log-ovnkube
         - mountPath: /var/run/openvswitch/
           name: host-var-run-ovs
        #  readOnly: false
@@ -266,6 +268,9 @@ spec:
         #     port: 10259
         #     scheme: HTTP
         lifecycle:
+          preStop:
+            exec:
+              command: ["rm","-f","/etc/cni/net.d/10-ovn-kubernetes.conf"]
 
       nodeSelector:
         beta.kubernetes.io/os: "linux"
@@ -292,6 +297,9 @@ spec:
       - name: host-var-log-ovs
         hostPath:
           path: /var/log/openvswitch
+      - name: host-var-log-ovnkube
+        hostPath:
+          path: /var/log/ovn-kubernetes
       - name: host-run-ovs
         hostPath:
           path: /run/openvswitch

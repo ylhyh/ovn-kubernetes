@@ -97,11 +97,20 @@ func initLocalnetGateway(nodeName string, clusterIPSubnet []string,
 func initLocalnetGatewayInternal(nodeName string, clusterIPSubnet []string,
 	subnet string, ipt util.IPTablesHelper, nodePortEnable bool) error {
 	// Create a localnet OVS bridge.
-	localnetBridgeName := "br-localnet"
+	localnetBridgeName := "br-local"
 	_, stderr, err := util.RunOVSVsctl("--may-exist", "add-br",
 		localnetBridgeName)
 	if err != nil {
 		return fmt.Errorf("Failed to create localnet bridge %s"+
+			", stderr:%s (%v)", localnetBridgeName, stderr, err)
+	}
+
+	// ovn-bridge-mappings maps a physical network name to a local ovs bridge
+	// that provides connectivity to that network.
+	_, stderr, err = util.RunOVSVsctl("set", "Open_vSwitch", ".",
+		fmt.Sprintf("external_ids:ovn-bridge-mappings=%s:%s", util.PhysicalNetworkName, localnetBridgeName))
+	if err != nil {
+		return fmt.Errorf("Failed to set ovn-bridge-mappings for ovs bridge %s"+
 			", stderr:%s (%v)", localnetBridgeName, stderr, err)
 	}
 
@@ -142,7 +151,7 @@ func initLocalnetGatewayInternal(nodeName string, clusterIPSubnet []string,
 
 	err = util.GatewayInit(clusterIPSubnet, nodeName,
 		localnetGatewayIP, "", localnetBridgeName, localnetGatewayNextHop,
-		subnet, nodePortEnable)
+		subnet, 0, nodePortEnable)
 	if err != nil {
 		return fmt.Errorf("failed to localnet gateway: %v", err)
 	}
